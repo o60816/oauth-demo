@@ -1,6 +1,6 @@
-const util = require('util');
-const { logger } = require('../../utils/logger');
-const request = require('request');
+const util = require("util");
+const { logger } = require("../../utils/logger");
+const request = require("request");
 
 // https://developers.google.com/identity/protocols/oauth2/native-app?hl=en
 
@@ -37,62 +37,71 @@ const request = require('request');
 }
 */
 async function oauthLogin(req, res) {
-    try{
-        if(!req?.query?.code){
-            throw 'OAuth with Google failed';
-        }
-        let tokenBody = JSON.parse(await (async () => {
-            return new Promise((resolve, reject) => {
-                // Get those infos from 
-                let clientId = process.env.CLIENTID;
-                let clientSecret = process.env.CLIENTSECRET;
-                let redirectUri = 'http://localhost:8080/users/oauth';
-                // Get access_token through auth code get from req query params req.query.code
-                let authCode = req.query.code;
-                let data = `code=${authCode}&client_id=${clientId}&client_secret=${clientSecret}&redirect_uri=${redirectUri}&grant_type=authorization_code`
-                request.post(
-                    {
-                        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-                        url: 'https://oauth2.googleapis.com/token',
-                        body: data
-                    }, function (err, response, body) {
-                        if (err) {
-                            reject(err);
-                        }
-                        else {
-                            resolve(body);
-                        }
-                    });
-            });
-        })());
-        logger.info(`Access Token ${util.inspect(tokenBody.access_token, false, null, true)}`);
-
-        if(!tokenBody?.access_token){
-            throw 'OAuth with Google failed';
-        }
-        let userInfo = JSON.parse(await (async () => {
-            return new Promise((resolve, reject) => {
-                let userInfoUri = `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${tokenBody.access_token}`
-                request(
-                    {
-                        uri: userInfoUri
-                    }, function (err, response, body) {
-                    if (err) {
-                        reject(err);
-                    }
-                    else {
-                        resolve(body);
-                    }
-                })
-            });
-        })());
-        logger.info(`User info ${util.inspect(userInfo, false, null, true)}`);
-        res.render('index', { title: userInfo.name});
-    }catch(err){
-        logger.error(err);
+  try {
+    if (!req?.query?.code) {
+      throw "OAuth with Google failed";
     }
+    let tokenBody = JSON.parse(
+      await (async () => {
+        return new Promise((resolve, reject) => {
+          // Get those infos from
+          let clientId = process.env.CLIENT_ID;
+          let clientSecret = process.env.CLIENT_SECRET;
+          let redirectUri = "http://localhost:8080/users/oauth";
+          // Get access_token through auth code get from req query params req.query.code
+          let authCode = req.query.code;
+          logger.info(`${util.inspect(req.query, false, null, true)}`);
+          let data = `code=${authCode}&client_id=${clientId}&client_secret=${clientSecret}&redirect_uri=${redirectUri}&grant_type=authorization_code`;
+          logger.info(`${util.inspect(data, false, null, true)}`);
+          request.post(
+            {
+              headers: { "content-type": "application/x-www-form-urlencoded" },
+              url: "https://oauth2.googleapis.com/token",
+              body: data,
+            },
+            function (err, response, body) {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(body);
+              }
+            }
+          );
+        });
+      })()
+    );
+
+    logger.info(`Access Token ${util.inspect(tokenBody, false, null, true)}`);
+
+    if (!tokenBody?.access_token) {
+      throw "OAuth with Google failed";
+    }
+    let userInfo = JSON.parse(
+      await (async () => {
+        return new Promise((resolve, reject) => {
+          let userInfoUri = `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${tokenBody.access_token}`;
+          request(
+            {
+              uri: userInfoUri,
+            },
+            function (err, response, body) {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(body);
+              }
+            }
+          );
+        });
+      })()
+    );
+    logger.info(`User info ${util.inspect(userInfo, false, null, true)}`);
+    res.render("index", { title: userInfo.name });
+  } catch (err) {
+    logger.error(err);
+  }
 }
 
 module.exports = {
-    oauthLogin
-}
+  oauthLogin,
+};
